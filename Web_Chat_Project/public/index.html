@@ -1,0 +1,145 @@
+﻿<!DOCTYPE html>
+
+<!--
+ * File: chat.html
+ * Author: Nicholas McCormick, Josh McBrayer, Caitlyn McClain
+ * Date: September 30, 2017
+ * Purpose: Chat application general chat page.
+ -->
+
+<html lang="en">
+<head>
+    <title>Team Seven Chat Server</title>
+
+    <link href="/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+
+    <link href="/css/style.css" rel="stylesheet" type="text/css">
+
+    <style>
+
+        #contentWrap{
+            display: none;
+        }
+
+    </style>
+
+</head>
+<body>
+
+    <!--
+     <ul id="messages"></ul>
+     <form action="">
+         <input id="m" autocomplete="off" /><button>Send</button>
+     </form>
+        -->
+
+
+    <div class="container" id="usernameWrap">
+        <p id="error"></p>
+        <form class="form-signin" id="setUsername">
+            <h2 class="form-signin-heading">Please select a username</h2>
+            <label class="sr-only">Username</label>
+            <input id="username" class="form-control" placeholder="Username" required autofocus>
+
+            <button class="btn btn-lg btn-primary btn-block" type="submit">Log on</button>
+        </form>
+
+    </div>
+
+    <div class="container" id="contentWrap">
+        <div class="row">
+            <div class="panel panel-default">
+                <div class="panel-heading">#General</div>
+                <div class="panel-body">
+                    <div class="container">
+                        <ul id="messages"></ul>
+
+                    </div>
+
+
+                    <div class="panel-footer">
+                        <form class="form-inline" action="" id="chatForm">
+                            <input id="m" autocomplete="off" /><button type="submit" class="btn btn-primary">Send</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="users"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+
+    <!--This is the front-end code. -->
+    <script>
+
+        
+
+
+        $(function () {
+            // front-end socket.io
+            var socket = io();
+
+            var $usernameForm = $('#setUsername');
+            var $error = $('#error');
+            var $usernameInput = $('#username');
+            var $userList = $('#users');
+
+            $usernameForm.submit(function (e) {
+                e.preventDefault();
+                socket.emit('new user', $usernameInput.val(), function (data) {
+                    if (data) {
+                        $('#usernameWrap').hide();
+                        $('#contentWrap').show();
+                    } else {
+                        $error.html('That username is currently in use. Please enter another.');
+                    };
+                });
+
+                $usernameInput.val('');
+            });
+
+            // when a client presses submit the message is sent to the server.
+            $('#chatForm').submit(function () {
+                socket.emit('chat message', $('#m').val());
+                $('#m').val('');
+                return false;
+            });
+
+
+            // when the server emits a chat message it appends the message contents to the chat list in the HTML document.
+            socket.on('chat message', function (msg) {
+                $('#messages').append($('<li>').text(msg.nick + ': ' + msg.msg));
+            });
+
+
+            // This listens for a 'dis' event and posts a message to the chat saying a client has disconnected.
+            socket.on('dis', function (msg) {
+                $('#messages').append($('<li>').text(msg));
+                $("li").last().css("color", "grey");
+            });
+
+
+            // This listens for a 'conn' event and posts a message to the chat saying a client has connected.
+            socket.on('conn', function (msg) {
+                $('#messages').append($('<li>').text(msg));
+                $("li").last().css("color", "grey");
+            });
+
+            //fill usernames list div
+            socket.on('nicknames', function (data) {
+                var html = '';
+                for (i = 0; i < data.length; i++) {
+                    html += data[i] + '<br>';
+                };
+                $userList.html(html);
+            });
+        });
+
+
+
+    </script>
+</body>
+</html>
